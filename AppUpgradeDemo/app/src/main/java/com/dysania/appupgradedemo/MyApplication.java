@@ -16,7 +16,7 @@ import com.tencent.bugly.beta.ui.UILifecycleListener;
 
 public class MyApplication extends Application {
 
-    private static final String APP_ID = "07d7c5a05d";
+    private static final String APP_ID = "7f9230f956";
 
     @Override
     public void onCreate() {

@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_LOGS" />
+    <!--保存资源到SD卡-->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <!-- Bugly End -->
 
@@ -20,7 +21,6 @@
         android:theme="@style/AppTheme">
 
         <meta-data android:name="channel" android:value="${CHANNEL}"/>
-        <meta-data android:name="com.tencent.rdm.uuid" android:value="192f9067-2795-4a68-a1aa-6850aa6d7ba4" />
 
         <activity android:name=".MainActivity">
             <intent-filter>
