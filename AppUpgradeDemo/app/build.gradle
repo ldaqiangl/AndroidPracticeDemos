@@ -118,14 +118,14 @@ ext {
 
     //for normal build
     //old apk file to build patch apk
-    tinkerOldApkPath = "${bakPath}/app-1201-19-48-58/wandoujia/app-wandoujia-release.apk"
+    tinkerOldApkPath = "${bakPath}/app-1202-10-55-35/wandoujia/app-wandoujia-release.apk"
     //proguard mapping file to build patch apk
-    tinkerApplyMappingPath = "${bakPath}/app-1201-19-48-58/wandoujia/app-wandoujia-mapping.txt"
+    tinkerApplyMappingPath = "${bakPath}/app-1202-10-55-35/wandoujia/app-wandoujia-mapping.txt"
     //resource R.txt to build patch apk, must input if there is resource changed
-    tinkerApplyResourcePath = "${bakPath}/app-1201-19-48-58/wandoujia/app-wandoujia-release-R.txt"
+    tinkerApplyResourcePath = "${bakPath}/app-1202-10-55-35/wandoujia/app-wandoujia-release-R.txt"
 
     //only use for build all flavor, if not, just ignore this field
-    tinkerBuildFlavorDirectory = "${bakPath}/app-1201-19-48-58"
+    tinkerBuildFlavorDirectory = "${bakPath}/app-1202-10-55-35"
 }
 
 def getOldApkPath() {
@@ -171,7 +171,7 @@ if (buildWithTinker()) {
             //可选，设置mapping文件，建议保持旧的apk的proguard混淆方式
             applyResourceMapping = getApplyResourceMappingPath()
             //可选，设置R.txt文件，通过旧apk文件保持ResId的分配
-            tinkerId = "AppUpgradeDemo_1.0"
+            tinkerId = "02b8c4faf567ecd586f71f740b20ba11b19d63ae"
             //必选，当前版本的唯一标识，可以是git版本号、versionName，默认为null
         }
 

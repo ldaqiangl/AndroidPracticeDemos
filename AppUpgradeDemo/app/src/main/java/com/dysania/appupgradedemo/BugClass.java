@@ -9,7 +9,7 @@ public class BugClass {
     public String bug() {
         //制造一个bug：空指针
         String str = null;
-        int length = str.length();
+        //int length = str.length();
         return "This is a fixed bug class";
     }
 }
