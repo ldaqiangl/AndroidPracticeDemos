@@ -13,7 +13,7 @@
     tools:context="com.dysania.appupgradedemo.MainActivity">
 
     <TextView
-        android:id="@+id/tv_app_info"
+        android:id="@+id/tv_main_appInfo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="AppUpgradeDemo"/>
@@ -34,7 +34,7 @@
             android:textSize="16sp"/>
 
         <ImageView
-            android:id="@+id/iv_main_reddot"
+            android:id="@+id/iv_main_redDot"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignTop="@+id/tv_main_settings"
@@ -43,4 +43,28 @@
             android:src="@drawable/shape_red_dot"
             android:visibility="gone"/>
     </RelativeLayout>
+
+    <Button
+        android:id="@+id/btn_main_showToast"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="显示结果"/>
+
+    <Button
+        android:id="@+id/btn_main_loadPatch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="加载补丁"/>
+
+    <Button
+        android:id="@+id/btn_main_loadLibrary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="加载so库"/>
+
+    <Button
+        android:id="@+id/btn_main_killSelf"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="退出程序"/>
 </LinearLayout>
