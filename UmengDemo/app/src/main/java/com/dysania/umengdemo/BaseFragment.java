@@ -1,4 +1,4 @@
-package com.example.dysania.umengdemo;
+package com.dysania.umengdemo;
 
 import android.support.v4.app.Fragment;
 

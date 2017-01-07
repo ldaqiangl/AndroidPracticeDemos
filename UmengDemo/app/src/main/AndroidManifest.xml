@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.example.dysania.umengdemo">
+          package="com.dysania.umengdemo">
 
     <!-- Umeng Start -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
@@ -18,7 +18,7 @@
         android:theme="@style/AppTheme">
 
         <!-- Umeng Start -->
-        <meta-data android:name="UMENG_APPKEY" android:value="5816ad7b1c5dd0612e0004a0"></meta-data>
+        <meta-data android:name="UMENG_APPKEY" android:value="5870b497734be44fa7000ce1"></meta-data>
         <meta-data android:name="UMENG_CHANNEL" android:value="${CHANNEL}"/>
         <!-- Umeng End -->
 

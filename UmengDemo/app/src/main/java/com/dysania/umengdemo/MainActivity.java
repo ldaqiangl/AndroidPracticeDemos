@@ -1,4 +1,4 @@
-package com.example.dysania.umengdemo;
+package com.dysania.umengdemo;
 
 import android.content.Intent;
 import android.os.Bundle;

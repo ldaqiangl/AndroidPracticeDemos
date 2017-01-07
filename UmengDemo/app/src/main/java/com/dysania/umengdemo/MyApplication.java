@@ -1,4 +1,4 @@
-package com.example.dysania.umengdemo;
+package com.dysania.umengdemo;
 
 import android.app.Application;
 
@@ -24,7 +24,7 @@ public class MyApplication extends Application {
         MobclickAgent.openActivityDurationTrack(false);
 
         //打开调试模式
-        MobclickAgent.setDebugMode(BuildConfig.DEBUG ? true : false);
+        MobclickAgent.setDebugMode(BuildConfig.DEBUG);
     }
 
 }

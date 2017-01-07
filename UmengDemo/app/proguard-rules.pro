@@ -20,7 +20,7 @@
 -keepclassmembers class * {
    public <init> (org.json.JSONObject);
 }
--keep public class com.example.dysania.umengdemo.R$*{
+-keep public class com.dysania.umengdemo.R$*{
 public static final int *;
 }
 -keepclassmembers enum * {
