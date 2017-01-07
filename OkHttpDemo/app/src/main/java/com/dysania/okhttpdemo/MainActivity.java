@@ -1,4 +1,4 @@
-package com.example.dysania.okhttpdemo;
+package com.dysania.okhttpdemo;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call call, Response response) throws IOException {
                 //response.body().string()      返回字符串
                 //response.body().bytes()       返回二进制数组
-                //response.body().byteStream()  返回inputStream
+                //response.body().byteStream()  返回inputStreamF
                 Log.d(TAG, "onResponse: " + response.code() + "\t" + response.body().string());
             }
         });
