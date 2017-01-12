@@ -7,28 +7,48 @@ import android.view.View;
 
 import java.io.IOException;
 
+import okhttp3.Authenticator;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.Credentials;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.Route;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "OkHttpDemo";
     private static final MediaType MEDIA_TYPE_MARKDOWN = MediaType.parse("text/x-markdown; charset=utf-8");
-    private static final String GET_URL = "http://publicobject.com/helloworld.txt";
+    private static final String GET_URL = "https://publicobject.com/helloworld.txt";
     private static final String POST_URL = "https://api.github.com/markdown/raw";
+    private static final String AUTH_URL = "https://publicobject.com/secrets/hellosecret.txt";
 
-    //创建OkHttpClient对象
-    OkHttpClient mOkHttpClient = new OkHttpClient();
+    OkHttpClient mOkHttpClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initOkHttpClient();
+    }
+
+    private void initOkHttpClient() {
+        //创建OkHttpClient对象
+        mOkHttpClient = new OkHttpClient.Builder()
+                .authenticator(new Authenticator() {
+                    @Override
+                    public Request authenticate(Route route, Response response) throws IOException {
+                        String credential = Credentials.basic("jesse", "password1");    //the credential can be refresh_token in your project
+                        if(credential.equals(response.request().header("Authorization"))) {
+                            return null;    // If we already failed with these credentials, don't retry. You can log out or do something else before return.
+                    }
+                        return response.request().newBuilder().header("Authorization", credential).build();
+                    }
+                })
+                .build();
     }
 
     //发送GET请求
@@ -36,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
         //创建一个Request对象
         final Request request = new Request.Builder()
                 //.header(String name, String value)
-                .url(GET_URL)
+                .url(AUTH_URL)
                 .build();
         //创建Call对象
         Call call = mOkHttpClient.newCall(request);
