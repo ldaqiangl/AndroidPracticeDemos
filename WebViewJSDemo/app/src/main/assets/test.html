@@ -1,0 +1,26 @@
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <script type="text/javascript">
+
+        function javaCallJs(){
+            document.getElementById("content").innerHTML += "<br/>Java调用Js";
+        }
+
+        function javaCallJsWithArgs(arg0){
+            document.getElementById("content").innerHTML += "<br/>Java调用Js并传递参数：" + arg0;
+        }
+
+    </script>
+</head>
+
+<body>
+<button onClick="injectedObject.jsCallJava()">Js调用Java</button>
+<br/>
+<button onClick="injectedObject.jsCallJavaWithArgs('data from js')">Js调用Java并传递参数</button>
+<br/>
+<br/>
+<div id="content">内容显示：</div>
+</body>
+
+</html>
