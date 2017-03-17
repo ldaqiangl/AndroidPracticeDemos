@@ -85,7 +85,6 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:24.2.1'
-    testCompile 'junit:junit:4.12'
     //多dex配置
     compile "com.android.support:multidex:1.0.1"
     //Bugly升级（建议指定一个固定的版本号）
