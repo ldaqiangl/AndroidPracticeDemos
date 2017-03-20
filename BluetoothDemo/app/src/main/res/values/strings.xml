@@ -4,7 +4,9 @@
     <string name="bluetooth_start_scan">蓝牙已开启，点击扫描</string>
     <string name="ble_not_support">设备不支持低功耗蓝牙</string>
     <string name="bluetooth_permission_denied">蓝牙所需权限未被授予</string>
-
+    <string name="bluetooth_is_on">蓝牙已开启</string>
+    <string name="bluetooth_is_off">蓝牙未开启</string>
+    <string name="bluetooth_scan_error">扫描失败(%1$d)</string>
     <string name="bluetooth_paired_list">已配对设备：</string>
     <string name="bluetooth_available_list">可用设备：</string>
     <string name="bluetooth_no_paired">尚无配对设备</string>
