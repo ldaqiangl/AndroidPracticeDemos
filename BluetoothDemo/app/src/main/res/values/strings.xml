@@ -1,13 +1,27 @@
 <resources>
-    <string name="app_name">BluetoothDemo</string>
-    <string name="bluetooth_open_bt">蓝牙未开启，点击开启</string>
-    <string name="bluetooth_start_scan">蓝牙已开启，点击扫描</string>
-    <string name="ble_not_support">设备不支持低功耗蓝牙</string>
-    <string name="bluetooth_permission_denied">蓝牙所需权限未被授予</string>
-    <string name="bluetooth_is_on">蓝牙已开启</string>
-    <string name="bluetooth_is_off">蓝牙未开启</string>
-    <string name="bluetooth_scan_error">扫描失败(%1$d)</string>
-    <string name="bluetooth_paired_list">已配对设备：</string>
-    <string name="bluetooth_available_list">可用设备：</string>
-    <string name="bluetooth_no_paired">尚无配对设备</string>
+  <string name="app_name">BluetoothDemo</string>
+  <string name="bluetooth_open_bt">蓝牙未开启，点击开启</string>
+  <string name="bluetooth_start_scan">蓝牙已开启，点击扫描</string>
+  <string name="ble_not_support">设备不支持低功耗蓝牙</string>
+  <string name="bluetooth_not_support">设备不支持蓝牙</string>
+  <string name="bluetooth_permission_denied">蓝牙所需权限未被授予</string>
+  <string name="bluetooth_is_on">蓝牙已开启</string>
+  <string name="bluetooth_is_off">蓝牙未开启</string>
+  <string name="bluetooth_scan_error">扫描失败(%1$d)</string>
+
+  <string name="bluetooth_device_name">设备名称：</string>
+  <string name="bluetooth_device_address">设备地址：</string>
+  <string name="bluetooth_device_state">设备状态：</string>
+  <string name="bluetooth_device_data">设备数据：</string>
+
+  <string name="bluetooth_state_connected">已连接，点击断开</string>
+  <string name="bluetooth_state_disconnected">未连接，点击连接</string>
+  <string name="bluetooth_empty_data">暂无数据</string>
+
+  <string name="bluetooth_unknown_service">Unknown Service</string>
+  <string name="bluetooth_unknown_characteristic">Unknown Characteristic</string>
+
+  <string name="bluetooth_paired_list">已配对设备：</string>
+  <string name="bluetooth_available_list">可用设备：</string>
+  <string name="bluetooth_no_paired">尚无配对设备</string>
 </resources>

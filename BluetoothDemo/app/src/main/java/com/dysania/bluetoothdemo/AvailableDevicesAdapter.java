@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,9 +19,19 @@ public class AvailableDevicesAdapter extends BaseAdapter {
     private Context mContext;
     private List<BluetoothDevice> mBluetoothDevices;
 
-    public AvailableDevicesAdapter(Context context, List<BluetoothDevice> bluetoothDevices) {
+    public AvailableDevicesAdapter(Context context) {
         this.mContext = context;
-        this.mBluetoothDevices = bluetoothDevices;
+        this.mBluetoothDevices = new ArrayList<>();
+    }
+
+    public void addItem(BluetoothDevice bluetoothDevice) {
+        if (!mBluetoothDevices.contains(bluetoothDevice)) {
+            mBluetoothDevices.add(bluetoothDevice);
+        }
+    }
+
+    public void clear() {
+        mBluetoothDevices.clear();
     }
 
     @Override
@@ -52,7 +63,7 @@ public class AvailableDevicesAdapter extends BaseAdapter {
         }
         BluetoothDevice bluetoothDevice = mBluetoothDevices.get(position);
         String deviceName = bluetoothDevice.getName();
-        viewHolder.mTvItemDeviceName.setText(TextUtils.isEmpty(deviceName) ? "null" : deviceName);
+        viewHolder.mTvItemDeviceName.setText(TextUtils.isEmpty(deviceName) ? "N/A" : deviceName);
         viewHolder.mTvItemDeviceAddress.setText(bluetoothDevice.getAddress());
         return convertView;
     }

@@ -24,8 +24,9 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.ListView;
 import java.util.ArrayList;
@@ -33,8 +34,9 @@ import java.util.List;
 
 /**
  * Created by DysaniazzZ on 14/03/2017.
+ * 蓝牙设备扫描页面
  */
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class DeviceScanActivity extends AppCompatActivity implements View.OnClickListener {
 
     private Button mBtnBluetoothState;
     private ListView mLvAvailableDevices;
@@ -42,7 +44,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Handler mHandler = new Handler();
     private boolean mScanning = false;
     private boolean mBluetoothEnabled = false;
-    private List<BluetoothDevice> mAvailableDevices = new ArrayList<>();
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
@@ -52,54 +53,91 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_PERMISSION_ACL = 0x01;
     private static final int REQUEST_ENABLE_BT = 0x02;
     private static final int SCAN_DEVICE_DURATION = 10000;
-    private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = DeviceScanActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        initData();
-        initView();
-    }
+        setContentView(R.layout.activity_device_scan);
 
-    private void initData() {
         //检查设备是否支持BLE
-        if (!BleUtil.checkBleSupport(this)) {
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             UIUtil.createToast(this, R.string.ble_not_support);
             finish();
         }
+
         //检查位置权限是否授予(6.0需要）
         checkAclPermission();
-        //检查蓝牙是否开启
+
+        //检查设备是否支持蓝牙
         BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
-        if (!BleUtil.checkBleEnabled(mBluetoothAdapter)) {
+        if (mBluetoothAdapter == null) {
+            UIUtil.createToast(this, R.string.bluetooth_not_support);
+            finish();
+            return;
+        }
+
+        mBtnBluetoothState = (Button) findViewById(R.id.btn_bluetooth_state);
+        mLvAvailableDevices = (ListView) findViewById(R.id.lv_available_devices);
+        mBtnBluetoothState.setOnClickListener(this);
+        mAvailableDevicesAdapter = new AvailableDevicesAdapter(this);
+        mLvAvailableDevices.setAdapter(mAvailableDevicesAdapter);
+        mLvAvailableDevices.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                BluetoothDevice bluetoothDevice = mAvailableDevicesAdapter.getItem(position);
+                DeviceControlActivity.actionStart(DeviceScanActivity.this, bluetoothDevice.getName(), bluetoothDevice.getAddress());
+            }
+        });
+
+        //检查蓝牙是否开启
+        if (!mBluetoothAdapter.isEnabled()) {
             Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(intent, REQUEST_ENABLE_BT);
         } else {
-            mBluetoothEnabled = true;
+            changeBleState(true);
         }
-        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
-            mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
-            mCustomScanCallback = new CustomScanCallback();
-        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
         //注册蓝牙状态变化的广播
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         registerReceiver(mBluetoothStateReceiver, intentFilter);
     }
 
-    private void initView() {
-        mBtnBluetoothState = (Button) findViewById(R.id.btn_bluetooth_state);
-        mLvAvailableDevices = (ListView) findViewById(R.id.lv_available_devices);
-        mBtnBluetoothState.setOnClickListener(this);
-        if (mBluetoothEnabled) {
-            mBtnBluetoothState.setText(R.string.bluetooth_start_scan);
-        } else {
-            mBtnBluetoothState.setText(R.string.bluetooth_open_bt);
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        //停止扫描
+        try {
+            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+                scanLeDeviceWithFilter(false);
+            } else {
+                scanLeDevice(false);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        mAvailableDevicesAdapter = new AvailableDevicesAdapter(this, mAvailableDevices);
-        mLvAvailableDevices.setAdapter(mAvailableDevicesAdapter);
+
+        //清空数据
+        mAvailableDevicesAdapter.clear();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        //注销广播，防止内存泄露
+        if (mBluetoothStateReceiver != null) {
+            unregisterReceiver(mBluetoothStateReceiver);
+            mBluetoothStateReceiver = null;
+        }
     }
 
     private void checkAclPermission() {
@@ -134,12 +172,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case REQUEST_ENABLE_BT:
                 if (resultCode == RESULT_OK) {
                     //蓝牙开启
-                    mBluetoothEnabled = true;
-                    mBtnBluetoothState.setText(R.string.bluetooth_start_scan);
+                    changeBleState(true);
                 } else {
                     //蓝牙未开启
-                    mBluetoothEnabled = false;
-                    mBtnBluetoothState.setText(R.string.bluetooth_open_bt);
+                    changeBleState(false);
                 }
                 break;
         }
@@ -150,6 +186,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             case R.id.btn_bluetooth_state:
                 if (mBluetoothEnabled) {
+                    mAvailableDevicesAdapter.clear();
+                    mAvailableDevicesAdapter.notifyDataSetChanged();
                     if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
                         scanLeDeviceWithFilter(true);
                     } else {
@@ -168,23 +206,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onReceive(Context context, Intent intent) {
             int bluetoothState = intent.getExtras().getInt(BluetoothAdapter.EXTRA_STATE);
-            Log.e(TAG, String.valueOf(bluetoothState));
             switch (bluetoothState) {
                 case BluetoothAdapter.STATE_ON:
-                    mBluetoothEnabled = true;
-                    mBtnBluetoothState.setText(R.string.bluetooth_start_scan);
+                    changeBleState(true);
                     UIUtil.createToast(context, R.string.bluetooth_is_on);
                     break;
                 case BluetoothAdapter.STATE_OFF:
-                    mBluetoothEnabled = false;
-                    mBtnBluetoothState.setText(R.string.bluetooth_open_bt);
+                    changeBleState(false);
                     UIUtil.createToast(context, R.string.bluetooth_is_off);
-                    mAvailableDevices.clear();
+                    mAvailableDevicesAdapter.clear();
                     mAvailableDevicesAdapter.notifyDataSetChanged();
                     break;
             }
         }
     };
+
+    private void changeBleState(boolean enable) {
+        mBluetoothEnabled = enable;
+        if (enable) {
+            mBtnBluetoothState.setText(R.string.bluetooth_start_scan);
+            //判断设备版本，决定是否使用过滤扫描
+            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+                mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+                mCustomScanCallback = new CustomScanCallback();
+            }
+        } else {
+            mBtnBluetoothState.setText(R.string.bluetooth_open_bt);
+        }
+    }
+
+    private void stopScanLeDevice() {
+        if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
+            return;
+        }
+        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+            mBluetoothLeScanner.stopScan(mCustomScanCallback);
+        } else {
+            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+        }
+    }
 
     /**
      * 扫描蓝牙设备
@@ -197,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 public void run() {
                     mScanning = false;
                     mBtnBluetoothState.setEnabled(true);
-                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                    stopScanLeDevice();
                 }
             }, SCAN_DEVICE_DURATION);
             mScanning = true;
@@ -206,10 +266,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             mScanning = false;
             mBtnBluetoothState.setEnabled(true);
-            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+            stopScanLeDevice();
         }
     }
 
+    /**
+     * 扫描蓝牙设备(可以定义扫描规则)
+     */
     @TargetApi(VERSION_CODES.LOLLIPOP)
     private void scanLeDeviceWithFilter(boolean enable) {
         if (enable) {
@@ -218,12 +281,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 public void run() {
                     mScanning = false;
                     mBtnBluetoothState.setEnabled(true);
-                    mBluetoothLeScanner.stopScan(mCustomScanCallback);
+                    stopScanLeDevice();
                 }
             }, SCAN_DEVICE_DURATION);
             mScanning = true;
             mBtnBluetoothState.setEnabled(false);
-            ScanFilter scanFilter = new Builder().setDeviceName(IConstants.DEVICE_NAME).build();
+            ScanFilter scanFilter = new Builder().setDeviceName(AppConstants.DEVICE_NAME).build();
             ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
             ArrayList<ScanFilter> filters = new ArrayList<>();
             filters.add(scanFilter);
@@ -231,7 +294,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             mScanning = false;
             mBtnBluetoothState.setEnabled(true);
-            mBluetoothLeScanner.stopScan(mCustomScanCallback);
+            stopScanLeDevice();
         }
     }
 
@@ -242,10 +305,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
             BluetoothDevice device = result.getDevice();
-            if (!mAvailableDevices.contains(device)) {
-                mAvailableDevices.add(result.getDevice());
-                mAvailableDevicesAdapter.notifyDataSetChanged();
-            }
+            mAvailableDevicesAdapter.addItem(device);
+            mAvailableDevicesAdapter.notifyDataSetChanged();
         }
 
         @Override
@@ -253,9 +314,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             super.onBatchScanResults(results);
             for (ScanResult result : results) {
                 BluetoothDevice device = result.getDevice();
-                if (!mAvailableDevices.contains(device)) {
-                    mAvailableDevices.add(result.getDevice());
-                }
+                mAvailableDevicesAdapter.addItem(device);
             }
             mAvailableDevicesAdapter.notifyDataSetChanged();
         }
@@ -263,31 +322,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
-            UIUtil.createToast(MainActivity.this, getString(R.string.bluetooth_scan_error, errorCode));
+            UIUtil.createToast(DeviceScanActivity.this, getString(R.string.bluetooth_scan_error, errorCode));
         }
     }
 
     private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
+
         @Override
         public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (!mAvailableDevices.contains(device) && IConstants.DEVICE_NAME.equals(device.getName())) {
-                        mAvailableDevices.add(device);
+                    if (AppConstants.DEVICE_NAME.equals(device.getName())) {
+                        mAvailableDevicesAdapter.addItem(device);
                         mAvailableDevicesAdapter.notifyDataSetChanged();
                     }
                 }
             });
         }
     };
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mBluetoothStateReceiver != null) {
-            unregisterReceiver(mBluetoothStateReceiver);
-            mBluetoothStateReceiver = null;
-        }
-    }
 }
