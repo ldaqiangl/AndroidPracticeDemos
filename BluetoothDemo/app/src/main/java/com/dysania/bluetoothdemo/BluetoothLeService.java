@@ -39,7 +39,7 @@ public class BluetoothLeService extends Service {
     public int mCurrentConnectState = STATE_DISCONNECTED;
 
     public static final UUID UUID_SMART_PILLBOX_NOTIFICATION = UUID
-            .fromString(AppConstants.CUSTOM_CHARACTERISTICS__SMART_PILLBOX_NOTIFICATION_UUID);
+            .fromString(AppConstants.CUSTOM_CHARACTERISTICS_SMART_PILLBOX_NOTIFICATION_UUID);
 
     private final IBinder mBinder = new LocalBinder();
 
@@ -141,12 +141,30 @@ public class BluetoothLeService extends Service {
 
     private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
+        String data = null;
         //获取特征值里的数据
-        byte[] data = characteristic.getValue();
-        if (data != null && data.length > 0) {
-            intent.putExtra(EXTRA_DATA, new String(data));
-            sendBroadcast(intent);
+        if (UUID.fromString(AppConstants.PRIMARY_CHARACTERISTIC_BATTERY_LEVEL_UUID).equals(characteristic.getUuid())) {
+            byte[] value = characteristic.getValue();
+            if (value != null) {
+                data = String.valueOf(value[0]);
+            }
+        } else if(UUID.fromString(AppConstants.PRIMARY_CHARACTERISTICS_DEVICE_SYSTEM_ID_UUID).equals(characteristic.getUuid())) {
+            byte[] value = characteristic.getValue();
+            if(value != null) {
+                StringBuilder stringBuilder = new StringBuilder();
+                for (byte b : value) {
+                   stringBuilder. append(String.format("%02X ", b)).append(" ");
+                }
+                data = stringBuilder.toString();
+            }
+        } else {
+            byte[] value = characteristic.getValue();
+            if (value != null && value.length > 0) {
+                data = new String(value);
+            }
         }
+        intent.putExtra(EXTRA_DATA, data);
+        sendBroadcast(intent);
     }
 
     /**

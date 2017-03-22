@@ -187,7 +187,6 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
             case R.id.btn_bluetooth_state:
                 if (mBluetoothEnabled) {
                     mAvailableDevicesAdapter.clear();
-                    mAvailableDevicesAdapter.notifyDataSetChanged();
                     if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
                         scanLeDeviceWithFilter(true);
                     } else {
@@ -215,7 +214,6 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
                     changeBleState(false);
                     UIUtil.createToast(context, R.string.bluetooth_is_off);
                     mAvailableDevicesAdapter.clear();
-                    mAvailableDevicesAdapter.notifyDataSetChanged();
                     break;
             }
         }
@@ -306,7 +304,6 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
             super.onScanResult(callbackType, result);
             BluetoothDevice device = result.getDevice();
             mAvailableDevicesAdapter.addItem(device);
-            mAvailableDevicesAdapter.notifyDataSetChanged();
         }
 
         @Override
@@ -316,7 +313,6 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
                 BluetoothDevice device = result.getDevice();
                 mAvailableDevicesAdapter.addItem(device);
             }
-            mAvailableDevicesAdapter.notifyDataSetChanged();
         }
 
         @Override
@@ -335,7 +331,6 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
                 public void run() {
                     if (AppConstants.DEVICE_NAME.equals(device.getName())) {
                         mAvailableDevicesAdapter.addItem(device);
-                        mAvailableDevicesAdapter.notifyDataSetChanged();
                     }
                 }
             });

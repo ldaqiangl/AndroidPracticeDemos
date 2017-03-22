@@ -28,10 +28,12 @@ public class AvailableDevicesAdapter extends BaseAdapter {
         if (!mBluetoothDevices.contains(bluetoothDevice)) {
             mBluetoothDevices.add(bluetoothDevice);
         }
+        this.notifyDataSetChanged();
     }
 
     public void clear() {
         mBluetoothDevices.clear();
+        this.notifyDataSetChanged();
     }
 
     @Override
