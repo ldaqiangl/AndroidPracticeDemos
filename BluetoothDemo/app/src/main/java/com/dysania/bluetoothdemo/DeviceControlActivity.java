@@ -1,26 +1,32 @@
 package com.dysania.bluetoothdemo;
 
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 import com.dysania.bluetoothdemo.BluetoothLeService.LocalBinder;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,16 +43,22 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
     private static final String LIST_NAME = "name";
     private static final String LIST_UUID = "uuid";
 
+    private static final String PIN_CODE = "111111";
+
     private static final String TAG = DeviceControlActivity.class.getSimpleName();
 
     private String mDeviceAddress;
+    private BluetoothDevice mBluetoothDevice;
     private boolean mConnectionState = false;
+    private boolean mBondState = false;
+    private BluetoothGatt mBluetoothGatt;
     private BluetoothLeService mBluetoothLeService;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics;
 
     private TextView mTvDeviceState;
     private TextView mTvDeviceData;
+    private Button mBtnBondState;
     private ExpandableListView mElvGattServices;
 
     public static void actionStart(Context context, String deviceName, String deviceAddress) {
@@ -66,6 +78,10 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
             }
             //连接设备
             mBluetoothLeService.connect(mDeviceAddress);
+
+            mBluetoothGatt = mBluetoothLeService.getBluetoothGatt();
+            mBluetoothDevice = mBluetoothLeService.getBluetoothDevice(mDeviceAddress);
+            updateBondState(mBluetoothLeService.getBondState(mDeviceAddress));
         }
 
         @Override
@@ -91,6 +107,34 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         }
     };
 
+    private BroadcastReceiver mBondStateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)) {
+                switch (mBluetoothDevice.getBondState()) {
+                    case BluetoothDevice.BOND_BONDING:
+                        Log.e(TAG, "The device is bonding");
+                        break;
+                    case BluetoothDevice.BOND_BONDED:
+                        Log.e(TAG, "The device is bonded");
+                        break;
+                    case BluetoothDevice.BOND_NONE:
+                        Log.e(TAG, "The device is not bonded");
+                        break;
+                }
+            } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)) {
+                Log.e(TAG, "pairing request");
+//                try {
+//                    mBluetoothDevice.setPin(PIN_CODE.getBytes("UTF-8"));
+//                    abortBroadcast();
+//                } catch (UnsupportedEncodingException e) {
+//                    e.printStackTrace();
+//                }
+            }
+        }
+    };
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,8 +144,10 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         TextView tvDeviceAddress = (TextView) findViewById(R.id.tv_device_address);
         mTvDeviceState = (TextView) findViewById(R.id.tv_device_state);
         mTvDeviceData = (TextView) findViewById(R.id.tv_device_data);
+        mBtnBondState = (Button) findViewById(R.id.btn_bond_state);
         mElvGattServices = (ExpandableListView) findViewById(R.id.elv_gatt_services);
         mTvDeviceState.setOnClickListener(this);
+        mBtnBondState.setOnClickListener(this);
         mElvGattServices.setOnChildClickListener(this);
 
         Intent intent = getIntent();
@@ -114,6 +160,9 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         //bind service
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
+        //register bond state receiver
+        registerReceiver(mBondStateReceiver, makeBondStateIntentFilter());
     }
 
     @Override
@@ -138,6 +187,11 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (mBondStateReceiver != null) {
+            unregisterReceiver(mBondStateReceiver);
+            mBondStateReceiver = null;
+        }
+
         try {
             unbindService(mServiceConnection);
             mBluetoothLeService = null;
@@ -152,6 +206,17 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
             public void run() {
                 mConnectionState = connectionState;
                 mTvDeviceState.setText(connectionState ? R.string.bluetooth_state_connected : R.string.bluetooth_state_disconnected);
+                mBtnBondState.setEnabled(mConnectionState ? true : false);
+            }
+        });
+    }
+
+    private void updateBondState(final boolean bondState) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mBondState = bondState;
+                mBtnBondState.setText(bondState ? R.string.bluetooth_state_paired : R.string.bluetooth_state_unpaired);
             }
         });
     }
@@ -221,6 +286,23 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         return intentFilter;
     }
 
+    private static IntentFilter makeBondStateIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+        intentFilter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
+        intentFilter.setPriority(intentFilter.SYSTEM_HIGH_PRIORITY - 1);
+        return intentFilter;
+    }
+
+    private void deleteBondInformation(BluetoothDevice device) {
+        try {
+            Method m = device.getClass().getMethod("removeBond", (Class[]) null);
+            m.invoke(device, (Object[]) null);
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
+    }
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -229,6 +311,16 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
                     mBluetoothLeService.disconnect();
                 } else {
                     mBluetoothLeService.connect(mDeviceAddress);
+                }
+                break;
+            case R.id.btn_bond_state:
+                if (mBondState) {
+                    //解绑
+                    deleteBondInformation(mBluetoothDevice);
+                } else {
+                    //绑定
+                    deleteBondInformation(mBluetoothDevice);
+                    mBluetoothDevice.createBond();
                 }
                 break;
         }
@@ -250,8 +342,43 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
                 mNotifyCharacteristic = characteristic;
                 mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);
             }
+            if ((properties | BluetoothGattCharacteristic.PROPERTY_WRITE) > 0
+                    || (properties | BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
+                if (AppConstants.CUSTOM_SERVICE_SMART_PILLBOX_UUID.equals(characteristic.getService().getUuid().toString())
+                        && AppConstants.CUSTOM_CHARACTERISTICS_SMART_PILLBOX_WRITE_DATA_UUID.equals(characteristic.getUuid().toString())) {
+                    showDialog(characteristic);
+                }
+            }
             return true;
         }
         return false;
+    }
+
+    private void showDialog(final BluetoothGattCharacteristic characteristic) {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        String[] options = new String[]{"Beep", "Shark", "Led"};
+        dialog.setTitle("BLE Command Options")
+                .setItems(options, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Log.e(TAG, "Options: " + which);
+                        switch (which) {
+                            case 0:
+                                //蜂鸣
+                                characteristic.setValue(new byte[]{(byte) 0xAA, 0x04, 0x01, (byte) 0xB3, 0x62, 0x55});
+                                break;
+                            case 1:
+                                //震动
+                                characteristic.setValue(new byte[]{(byte) 0xAA, 0x04, 0x00, (byte) 0xB4, 0x62, 0x55});
+                                break;
+                            case 2:
+                                //亮灯
+                                characteristic.setValue(new byte[]{(byte) 0xAA, 0x05, 0x00, (byte) 0xB2, 0x03, 0x64, 0x55});
+                                break;
+                        }
+                        mBluetoothGatt.writeCharacteristic(characteristic);
+                    }
+                })
+                .show();
     }
 }

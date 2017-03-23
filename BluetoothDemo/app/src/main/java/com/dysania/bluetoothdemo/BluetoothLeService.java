@@ -16,6 +16,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -281,5 +282,23 @@ public class BluetoothLeService extends Service {
             return null;
         }
         return mBluetoothGatt.getServices();
+    }
+
+    public BluetoothDevice getBluetoothDevice(String address) {
+        return mBluetoothAdapter.getRemoteDevice(address);
+    }
+    
+    public boolean getBondState(String address) {
+        Set<BluetoothDevice> bondedDevices = mBluetoothAdapter.getBondedDevices();
+        for (BluetoothDevice bondedDevice : bondedDevices) {
+            if(bondedDevice.getAddress().equals(address)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public BluetoothGatt getBluetoothGatt() {
+        return mBluetoothGatt;
     }
 }
