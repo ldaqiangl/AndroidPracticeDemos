@@ -78,6 +78,7 @@
       android:id="@+id/tv_device_data"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
+      android:text="@string/bluetooth_empty_data"
       android:textSize="18sp"/>
 
   </LinearLayout>
@@ -88,7 +89,7 @@
     android:layout_height="wrap_content"
     android:layout_marginTop="5dp"
     android:layout_marginBottom="5dp"
-    android:text="@string/bluetooth_state_unpaired"/>
+    android:text="@string/bluetooth_state_unbonded"/>
 
   <ExpandableListView
     android:id="@+id/elv_gatt_services"

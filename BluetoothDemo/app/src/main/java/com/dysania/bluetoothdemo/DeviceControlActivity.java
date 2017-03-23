@@ -45,12 +45,16 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
 
     private static final String PIN_CODE = "111111";
 
+    public static final int STATE_UNBONDED = 0;
+    public static final int STATE_BONDING = 1;
+    public static final int STATE_BONDED = 2;
+
     private static final String TAG = DeviceControlActivity.class.getSimpleName();
 
     private String mDeviceAddress;
     private BluetoothDevice mBluetoothDevice;
     private boolean mConnectionState = false;
-    private boolean mBondState = false;
+    private int mBondState = STATE_UNBONDED;
     private BluetoothGatt mBluetoothGatt;
     private BluetoothLeService mBluetoothLeService;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
@@ -81,7 +85,7 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
 
             mBluetoothGatt = mBluetoothLeService.getBluetoothGatt();
             mBluetoothDevice = mBluetoothLeService.getBluetoothDevice(mDeviceAddress);
-            updateBondState(mBluetoothLeService.getBondState(mDeviceAddress));
+            updateBondState(mBluetoothLeService.getBondState(mDeviceAddress) ? STATE_BONDED : STATE_UNBONDED);
         }
 
         @Override
@@ -115,12 +119,15 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
                 switch (mBluetoothDevice.getBondState()) {
                     case BluetoothDevice.BOND_BONDING:
                         Log.e(TAG, "The device is bonding");
+                        updateBondState(STATE_BONDING);
                         break;
                     case BluetoothDevice.BOND_BONDED:
                         Log.e(TAG, "The device is bonded");
+                        updateBondState(STATE_BONDED);
                         break;
                     case BluetoothDevice.BOND_NONE:
                         Log.e(TAG, "The device is not bonded");
+                        updateBondState(STATE_UNBONDED);
                         break;
                 }
             } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)) {
@@ -211,12 +218,25 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         });
     }
 
-    private void updateBondState(final boolean bondState) {
+    private void updateBondState(final int bondState) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 mBondState = bondState;
-                mBtnBondState.setText(bondState ? R.string.bluetooth_state_paired : R.string.bluetooth_state_unpaired);
+                switch (bondState) {
+                    case STATE_BONDED:
+                        mBtnBondState.setEnabled(true);
+                        mBtnBondState.setText(R.string.bluetooth_state_bonded);
+                        break;
+                    case STATE_BONDING:
+                        mBtnBondState.setEnabled(false);
+                        mBtnBondState.setText(R.string.bluetooth_state_bonding);
+                        break;
+                    case STATE_UNBONDED:
+                        mBtnBondState.setEnabled(true);
+                        mBtnBondState.setText(R.string.bluetooth_state_unbonded);
+                        break;
+                }
             }
         });
     }
@@ -290,10 +310,13 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
         intentFilter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
-        intentFilter.setPriority(intentFilter.SYSTEM_HIGH_PRIORITY - 1);
+//        intentFilter.setPriority(intentFilter.SYSTEM_HIGH_PRIORITY - 1);
         return intentFilter;
     }
 
+    /**
+     * 解除绑定，这个方法在国产机上存在较多问题
+     */
     private void deleteBondInformation(BluetoothDevice device) {
         try {
             Method m = device.getClass().getMethod("removeBond", (Class[]) null);
@@ -314,13 +337,16 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
                 }
                 break;
             case R.id.btn_bond_state:
-                if (mBondState) {
-                    //解绑
-                    deleteBondInformation(mBluetoothDevice);
-                } else {
-                    //绑定
-                    deleteBondInformation(mBluetoothDevice);
-                    mBluetoothDevice.createBond();
+                switch (mBondState) {
+                    case STATE_BONDED:
+                        //解绑
+                        deleteBondInformation(mBluetoothDevice);
+                        break;
+                    case STATE_UNBONDED:
+                        //绑定
+                        deleteBondInformation(mBluetoothDevice);
+                        mBluetoothDevice.createBond();
+                        break;
                 }
                 break;
         }
@@ -346,6 +372,7 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
                     || (properties | BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
                 if (AppConstants.CUSTOM_SERVICE_SMART_PILLBOX_UUID.equals(characteristic.getService().getUuid().toString())
                         && AppConstants.CUSTOM_CHARACTERISTICS_SMART_PILLBOX_WRITE_DATA_UUID.equals(characteristic.getUuid().toString())) {
+                    Log.e(TAG, "permission: " + characteristic.getPermissions());
                     showDialog(characteristic);
                 }
             }
@@ -361,7 +388,6 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
                 .setItems(options, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        Log.e(TAG, "Options: " + which);
                         switch (which) {
                             case 0:
                                 //蜂鸣
