@@ -48,6 +48,7 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
     private CustomScanCallback mCustomScanCallback;
+    private BluetoothStateReceiver mBluetoothStateReceiver;
     private AvailableDevicesAdapter mAvailableDevicesAdapter;
 
     private static final int REQUEST_PERMISSION_ACL = 0x01;
@@ -90,14 +91,6 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
                 DeviceControlActivity.actionStart(DeviceScanActivity.this, bluetoothDevice.getName(), bluetoothDevice.getAddress());
             }
         });
-
-        //检查蓝牙是否开启
-        if (!mBluetoothAdapter.isEnabled()) {
-            Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(intent, REQUEST_ENABLE_BT);
-        } else {
-            changeBleState(true);
-        }
     }
 
     @Override
@@ -107,7 +100,16 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
         //注册蓝牙状态变化的广播
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        mBluetoothStateReceiver = new BluetoothStateReceiver();
         registerReceiver(mBluetoothStateReceiver, intentFilter);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //检查蓝牙是否开启
+        changeBleState(mBluetoothAdapter.isEnabled());
     }
 
     @Override
@@ -200,24 +202,26 @@ public class DeviceScanActivity extends AppCompatActivity implements View.OnClic
         }
     }
 
-    private BroadcastReceiver mBluetoothStateReceiver = new BroadcastReceiver() {
+    private class BluetoothStateReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            int bluetoothState = intent.getExtras().getInt(BluetoothAdapter.EXTRA_STATE);
-            switch (bluetoothState) {
-                case BluetoothAdapter.STATE_ON:
-                    changeBleState(true);
-                    UIUtil.createToast(context, R.string.bluetooth_is_on);
-                    break;
-                case BluetoothAdapter.STATE_OFF:
-                    changeBleState(false);
-                    UIUtil.createToast(context, R.string.bluetooth_is_off);
-                    mAvailableDevicesAdapter.clear();
-                    break;
+            if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {
+                int bluetoothState = intent.getExtras().getInt(BluetoothAdapter.EXTRA_STATE);
+                switch (bluetoothState) {
+                    case BluetoothAdapter.STATE_ON:
+                        changeBleState(true);
+                        UIUtil.createToast(context, R.string.bluetooth_is_on);
+                        break;
+                    case BluetoothAdapter.STATE_OFF:
+                        changeBleState(false);
+                        UIUtil.createToast(context, R.string.bluetooth_is_off);
+                        mAvailableDevicesAdapter.clear();
+                        break;
+                }
             }
         }
-    };
+    }
 
     private void changeBleState(boolean enable) {
         mBluetoothEnabled = enable;

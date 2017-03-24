@@ -1,5 +1,6 @@
 package com.dysania.bluetoothdemo;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -73,6 +74,7 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
     }
 
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mBluetoothLeService = ((LocalBinder) service).getService();
@@ -95,6 +97,7 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
     };
 
     private BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -111,7 +114,8 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         }
     };
 
-    private BroadcastReceiver mBondStateReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver mBluetoothAndBondStateReceiver = new BroadcastReceiver() {
+
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -130,14 +134,23 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
                         updateBondState(STATE_UNBONDED);
                         break;
                 }
-            } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)) {
-                Log.e(TAG, "pairing request");
+//            } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)) {
+//                Log.e(TAG, "Pairing request");
+//                //本来打算接收这个广播时手动设置PIN码，跳过输入步骤，但是在国产机上不好使...
 //                try {
 //                    mBluetoothDevice.setPin(PIN_CODE.getBytes("UTF-8"));
 //                    abortBroadcast();
 //                } catch (UnsupportedEncodingException e) {
 //                    e.printStackTrace();
 //                }
+            } else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                int bluetoothState = intent.getExtras().getInt(BluetoothAdapter.EXTRA_STATE);
+                switch (bluetoothState) {
+                    case BluetoothAdapter.STATE_OFF:
+                        UIUtil.createToast(context, R.string.bluetooth_is_off);
+                        finish();
+                        break;
+                }
             }
         }
     };
@@ -168,13 +181,16 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
-        //register bond state receiver
-        registerReceiver(mBondStateReceiver, makeBondStateIntentFilter());
+        //register bluetooth and bond state receiver
+        registerReceiver(mBluetoothAndBondStateReceiver, makeBluetoothAndBondStateIntentFilter());
+
+        mBtnBondState.setEnabled(mConnectionState);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
         if (mBluetoothLeService != null) {
             boolean result = mBluetoothLeService.connect(mDeviceAddress);
@@ -185,6 +201,7 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
     @Override
     protected void onPause() {
         super.onPause();
+
         if (mGattUpdateReceiver != null) {
             unregisterReceiver(mGattUpdateReceiver);
             mGattUpdateReceiver = null;
@@ -194,9 +211,10 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mBondStateReceiver != null) {
-            unregisterReceiver(mBondStateReceiver);
-            mBondStateReceiver = null;
+
+        if (mBluetoothAndBondStateReceiver != null) {
+            unregisterReceiver(mBluetoothAndBondStateReceiver);
+            mBluetoothAndBondStateReceiver = null;
         }
 
         try {
@@ -213,7 +231,7 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
             public void run() {
                 mConnectionState = connectionState;
                 mTvDeviceState.setText(connectionState ? R.string.bluetooth_state_connected : R.string.bluetooth_state_disconnected);
-                mBtnBondState.setEnabled(mConnectionState ? true : false);
+                mBtnBondState.setEnabled(mConnectionState);
             }
         });
     }
@@ -306,11 +324,12 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
         return intentFilter;
     }
 
-    private static IntentFilter makeBondStateIntentFilter() {
+    private static IntentFilter makeBluetoothAndBondStateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-        intentFilter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
+//        intentFilter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
 //        intentFilter.setPriority(intentFilter.SYSTEM_HIGH_PRIORITY - 1);
+        intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         return intentFilter;
     }
 
@@ -340,11 +359,14 @@ public class DeviceControlActivity extends AppCompatActivity implements OnClickL
                 switch (mBondState) {
                     case STATE_BONDED:
                         //解绑
-                        deleteBondInformation(mBluetoothDevice);
+                        //deleteBondInformation(mBluetoothDevice);
+                        //这里假解绑，只是将连接断开
+                        if (mConnectionState) {
+                            mBluetoothLeService.disconnect();
+                        }
                         break;
                     case STATE_UNBONDED:
                         //绑定
-                        deleteBondInformation(mBluetoothDevice);
                         mBluetoothDevice.createBond();
                         break;
                 }

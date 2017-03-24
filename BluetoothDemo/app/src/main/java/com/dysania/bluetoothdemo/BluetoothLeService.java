@@ -22,7 +22,6 @@ import java.util.UUID;
 /**
  * Created by DysaniazzZ on 20/03/2017.
  */
-
 public class BluetoothLeService extends Service {
 
     private static final String TAG = BluetoothLeService.class.getSimpleName();
